@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, SQLModel
 
 from app.schemas.vehicle import VehicleCondition
@@ -40,3 +40,8 @@ class VehicleDB(SQLModel, table=True):
     sold: bool = False
     location: str | None = None
     observation: str | None = None
+    # Serialized VehicleImages: {"main_image": ..., "image_carousel": [...], "image_to_fix": [...]}
+    images: dict = Field(
+        default_factory=dict,
+        sa_column=sa.Column(JSONB, nullable=False, server_default="{}"),
+    )

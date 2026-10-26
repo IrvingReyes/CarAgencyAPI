@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
 
 class VehicleCondition(str, Enum):
@@ -8,6 +8,13 @@ class VehicleCondition(str, Enum):
     NEEDS_REPAIR = "needs_repair"
     IN_REPAIR = "in_repair"
     PARTS_ONLY = "parts_only"
+
+
+class VehicleImages(BaseModel):
+    main_image: HttpUrl | None = None
+    image_carousel: list[HttpUrl] = []
+    image_to_fix: list[HttpUrl] = []
+
 
 class VehicleCreate(BaseModel):
     brand: str
@@ -22,6 +29,7 @@ class VehicleCreate(BaseModel):
     sold: bool = False
     location: str | None = None
     observation: str | None = None
+    images: VehicleImages = Field(default_factory=VehicleImages)
     # # Service information
     # service_product_id: int | None = None
     # brand_id: int | None = None
@@ -70,3 +78,20 @@ class VehicleConditionUpdate(BaseModel):
 class VehicleConditionUpdateResponse(BaseModel):
     message: str
     vehicle: Vehicle
+
+
+class VehicleFilters(BaseModel):
+    """Search filters for GET /vehicles/, received as query parameters."""
+
+    brand: str | None = None
+    available: bool | None = None
+    sold: bool | None = None
+    condition: list[VehicleCondition] | None = None
+    min_price: float | None = Field(default=None, ge=0)
+    max_price: float | None = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def price_range_is_valid(self):
+        if self.min_price is not None and self.max_price is not None and self.min_price > self.max_price:
+            raise ValueError("min_price must be less than or equal to max_price")
+        return self

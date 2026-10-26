@@ -21,6 +21,10 @@ services:
     build: .
     environment:
       DATABASE_URL: postgresql+psycopg://car_agency:car_agency@db:5432/car_agency
+      # Read from the .env file next to this compose file
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      FIRST_USER_EMAIL: ${FIRST_USER_EMAIL:-}
+      FIRST_USER_PASSWORD: ${FIRST_USER_PASSWORD:-}
     ports:
       - "8000:8000"
     depends_on:

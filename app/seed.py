@@ -1,10 +1,12 @@
-"""Load sample vehicles for the showcase. Does nothing if the table already has data."""
+"""Load the first API user and sample vehicles for the showcase. Existing data is never touched."""
 
 from sqlmodel import Session, select
 
+from app.config import settings
 from app.database import engine
-from app.models import VehicleDB
+from app.models import UserDB, VehicleDB
 from app.schemas.vehicle import VehicleCondition
+from app.security import hash_password
 
 SAMPLE_VEHICLES = [
     VehicleDB(
@@ -35,14 +37,31 @@ SAMPLE_VEHICLES = [
 ]
 
 
+def seed_first_user(session: Session) -> None:
+    if not settings.first_user_email or not settings.first_user_password:
+        print("User seed skipped: FIRST_USER_EMAIL / FIRST_USER_PASSWORD not set")
+        return
+    if session.exec(select(UserDB).where(UserDB.email == settings.first_user_email)).first() is not None:
+        print(f"User seed skipped: {settings.first_user_email} already exists")
+        return
+    session.add(UserDB(email=settings.first_user_email, hashed_password=hash_password(settings.first_user_password)))
+    session.commit()
+    print(f"Seeded user {settings.first_user_email}")
+
+
+def seed_vehicles(session: Session) -> None:
+    if session.exec(select(VehicleDB)).first() is not None:
+        print("Vehicle seed skipped: vehicles table already has data")
+        return
+    session.add_all(SAMPLE_VEHICLES)
+    session.commit()
+    print(f"Seeded {len(SAMPLE_VEHICLES)} vehicles")
+
+
 def seed() -> None:
     with Session(engine) as session:
-        if session.exec(select(VehicleDB)).first() is not None:
-            print("Seed skipped: vehicles table already has data")
-            return
-        session.add_all(SAMPLE_VEHICLES)
-        session.commit()
-        print(f"Seeded {len(SAMPLE_VEHICLES)} vehicles")
+        seed_first_user(session)
+        seed_vehicles(session)
 
 
 if __name__ == "__main__":
